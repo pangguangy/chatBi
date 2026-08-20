@@ -19,3 +19,7 @@ chatbi.db
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# 提交文档与导出 PDF（本地生成，不随仓库提交）
+*.pdf
+docs/项目说明文档.md
