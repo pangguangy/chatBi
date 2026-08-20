@@ -1,57 +1,49 @@
 # -*- coding: utf-8 -*-
 """
-llm.py —— Claude API 调用封装（基于 Anthropic 官方 SDK）。
+llm.py —— DeepSeek API 调用封装（OpenAI 兼容接口，标准库 urllib 实现，无额外依赖）。
 
-使用 LangGraph 做任务规划/工具调用，使用 Claude 做自然语言理解、Text-to-SQL、
+使用 LangGraph 做任务规划/工具调用，使用 DeepSeek 做自然语言理解、Text-to-SQL、
 SQL 错误自动修正与最终自然语言总结。
 """
 import json
 import re
-
-import anthropic
+import urllib.error
+import urllib.request
 
 import config
 
-_client = None
 
-
-def get_client():
-    """返回复用的 anthropic 客户端；未配置密钥时返回 None。"""
-    global _client
+def chat(system: str, user: str, max_tokens: int = 2000, temperature: float = 0.0) -> str:
+    """单轮对话：调用 DeepSeek chat completions，返回文本；未配置密钥或失败返回 None。"""
     if not config.has_api_key():
         return None
-    if _client is None:
-        _client = anthropic.Anthropic(api_key=config.CLAUDE_API_KEY.strip())
-    return _client
-
-
-def _extract_text(content) -> str:
-    """兼容不同 SDK 版本，从响应 content 中提取纯文本。"""
-    if isinstance(content, str):
-        return content
-    parts = []
-    for block in content or []:
-        t = getattr(block, "text", None)
-        if t:
-            parts.append(t)
-    return "".join(parts)
-
-
-def chat(system: str, user: str, max_tokens: int = 2000) -> str:
-    """单轮对话：返回模型文本回答；未配置密钥或调用失败返回 None。"""
-    client = get_client()
-    if client is None:
-        return None
+    payload = {
+        "model": config.DEEPSEEK_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "stream": False,
+    }
+    url = config.DEEPSEEK_BASE_URL.rstrip("/") + "/chat/completions"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {config.DEEPSEEK_API_KEY.strip()}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
     try:
-        resp = client.messages.create(
-            model=config.CLAUDE_MODEL,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        return _extract_text(getattr(resp, "content", ""))
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        choices = data.get("choices") or []
+        return (choices[0].get("message") or {}).get("content", "") if choices else ""
     except Exception as e:  # noqa: BLE001 —— 网络/鉴权/限流异常都静默降级到启发式
-        print(f"[llm] Claude 调用失败：{e}")
+        print(f"[llm] DeepSeek 调用失败：{e}")
         return None
 
 
@@ -77,7 +69,7 @@ def parse_json_block(text: str) -> dict:
 
 
 def generate_sql(question: str, schema_prompt: str) -> dict:
-    """调用 Claude 进行 Text-to-SQL，返回 {sql, chart_type, reasoning}。"""
+    """调用 DeepSeek 进行 Text-to-SQL，返回 {sql, chart_type, reasoning}。"""
     system = (
         "你是一名制造业经营数据分析专家。根据用户问题与数据库 schema，"
         "生成一条可执行的 SQLite SELECT 查询。\n"

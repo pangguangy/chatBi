@@ -107,13 +107,13 @@ with st.sidebar:
     db_path = st.text_input("SQLite 数据库路径", value=config.DB_PATH)
 
     st.markdown("---")
-    st.subheader("Claude API")
+    st.subheader("DeepSeek API")
     if config.has_api_key():
-        st.success(f"已配置 API Key（模型：{config.CLAUDE_MODEL}）")
+        st.success(f"已配置 API Key（模型：{config.DEEPSEEK_MODEL}）")
         llm_mode = "LLM 驱动（Text-to-SQL）"
     else:
         st.info("未配置 API Key，运行于**离线模式**（内置启发式 SQL + 确定性总结）")
-        st.caption("配置方式：环境变量 ANTHROPIC_API_KEY，或修改 config.py 中的 CLAUDE_API_KEY")
+        st.caption("配置方式：项目根目录 .env 文件（见 .env.example），或环境变量 DEEPSEEK_API_KEY")
         llm_mode = "离线模式（启发式 SQL）"
 
     st.markdown("---")

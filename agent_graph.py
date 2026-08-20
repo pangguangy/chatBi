@@ -69,7 +69,7 @@ def planning_node(state: AgentState) -> AgentState:
     heuristic = match_heuristic(question)
     state["fallback_sql"] = (heuristic or {}).get("sql", "")
 
-    # 2) 优先调用 Claude 做 Text-to-SQL（体现 Agent 智能）
+    # 2) 优先调用 DeepSeek 做 Text-to-SQL（体现 Agent 智能）
     if intent == "report":
         _append_trace(state, "规划", "识别为「运营日报/月报」任务，进入报告生成流程")
         state["sql"] = ""
@@ -87,13 +87,13 @@ def planning_node(state: AgentState) -> AgentState:
         state["sql_source"] = "llm"
         state["plan"] = {"sql": llm_sql, "chart_type": state["chart_type"],
                          "reasoning": plan.get("reasoning", ""), "source": "llm"}
-        _append_trace(state, "规划", f"Claude 生成 SQL（图表类型：{state['chart_type']}）")
+        _append_trace(state, "规划", f"DeepSeek 生成 SQL（图表类型：{state['chart_type']}）")
     elif state["fallback_sql"]:
         state["sql"] = state["fallback_sql"]
         state["chart_type"] = (heuristic or {}).get("chart_type", "auto")
         state["sql_source"] = "heuristic"
         state["plan"] = dict(heuristic or {})
-        _append_trace(state, "规划", "未配置 API Key 或 Claude 未返回 SQL，使用内置启发式 SQL")
+        _append_trace(state, "规划", "未配置 API Key 或 DeepSeek 未返回 SQL，使用内置启发式 SQL")
     else:
         state["sql"] = ""
         state["chart_type"] = "text"
@@ -126,7 +126,7 @@ def execute_sql_node(state: AgentState) -> AgentState:
 
 
 def fix_sql_node(state: AgentState) -> AgentState:
-    """SQL 出错后的自动修正节点：优先 Claude 修复，最后切换到启发式兜底。"""
+    """SQL 出错后的自动修正节点：优先 DeepSeek 修复，最后切换到启发式兜底。"""
     state["retry_count"] = state.get("retry_count", 0) + 1
     question = state["question"]
     error = state.get("sql_error", "")
@@ -144,9 +144,9 @@ def fix_sql_node(state: AgentState) -> AgentState:
         new_sql = llm.fix_sql(question, state.get("sql", ""), error, schema_prompt)
         state["sql_source"] = "llm-fix"
         if new_sql:
-            _append_trace(state, "SQL 修正", f"第{state['retry_count']}次重试：Claude 根据报错自动修正 SQL")
+            _append_trace(state, "SQL 修正", f"第{state['retry_count']}次重试：DeepSeek 根据报错自动修正 SQL")
         else:
-            _append_trace(state, "SQL 修正", f"第{state['retry_count']}次重试：Claude 未能给出修正")
+            _append_trace(state, "SQL 修正", f"第{state['retry_count']}次重试：DeepSeek 未能给出修正")
 
     if new_sql and new_sql.strip():
         state["sql"] = new_sql.strip()
@@ -240,7 +240,7 @@ def finalize_node(state: AgentState) -> AgentState:
     else:
         state["traceability"] = base_trace
 
-    # 自然语言总结：优先 Claude，失败/无 Key 则确定性兜底
+    # 自然语言总结：优先 DeepSeek，失败/无 Key 则确定性兜底
     summary = None
     if config.has_api_key() and result and result.get("rows"):
         summary = llm.summarize(question, sql, result, tables, fields, schema.build_schema_prompt())
@@ -282,7 +282,7 @@ def _deterministic_summary(question: str, result: Optional[Dict[str, Any]]) -> s
     return (
         f"针对问题「{question}」，共查询到 **{row_count}** 行数据。\n\n"
         f"首行结果：{head_txt}。\n\n"
-        f"（离线模式：未调用 Claude 生成自然语言总结，仅展示数据结果。）"
+        f"（离线模式：未调用 DeepSeek 生成自然语言总结，仅展示数据结果。）"
     )
 
 

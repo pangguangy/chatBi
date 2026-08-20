@@ -9,5 +9,4 @@ matplotlib>=3.7.0
 # LangGraph for agent task planning and tool calling
 langgraph>=0.2.0
 
-# Claude API (Anthropic official SDK)
-anthropic>=0.34.0
+# DeepSeek API 通过标准库 urllib 调用，无需额外 SDK

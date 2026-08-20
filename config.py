@@ -2,21 +2,40 @@
 """
 全局配置模块（被 db_init.py / agent_graph.py / app.py 共同引用）。
 
-⚠️ Claude API 密钥配置位置 —— 二选一：
-    1) 环境变量：export ANTHROPIC_API_KEY="sk-ant-..."
-    2) 直接修改下方 CLAUDE_API_KEY 的默认值（仅本地调试用，切勿提交到 Git）
+⚠️ DeepSeek API 密钥配置位置（推荐方式一，避免密钥泄露）：
+    1) 项目根目录新建 `.env` 文件（复制 `.env.example` 后填入），已被 .gitignore 忽略；
+       DEEPSEEK_API_KEY=sk-xxxx
+    2) 环境变量：
+       Windows PowerShell:  $env:DEEPSEEK_API_KEY="sk-xxxx"
+       Linux / macOS:      export DEEPSEEK_API_KEY="sk-xxxx"
+    3) 仅本地临时调试：直接改下方 DEEPSEEK_API_KEY 默认值（用完务必改回空，切勿提交）。
 """
 import os
 
-# ==================== Claude API 配置 ====================
-# 方式一：从环境变量读取（推荐；HuggingFace Spaces 上通过 Settings -> Secrets 配置）
-CLAUDE_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+# ==================== .env 文件加载（可选） ====================
+# 读取项目根目录 .env（若存在），把 KEY=VALUE 注入环境变量（不覆盖已有变量）。
+_ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+if os.path.exists(_ENV_FILE):
+    try:
+        with open(_ENV_FILE, "r", encoding="utf-8") as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if not _line or _line.startswith("#") or "=" not in _line:
+                    continue
+                _k, _, _v = _line.partition("=")
+                os.environ.setdefault(_k.strip(), _v.strip().strip("\"'"))
+    except Exception:
+        pass  # .env 读取失败不影响启动
 
-# 方式二：本地调试时直接在此填入密钥（调试完请改回空字符串，避免泄露）
-# CLAUDE_API_KEY = "sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# ==================== DeepSeek API 配置 ====================
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 
-# 使用的 Claude 模型（可按需切换为 claude-opus-5 / claude-sonnet-5 / claude-haiku-4-5-20251001）
-CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")
+# 模型：deepseek-chat（DeepSeek-V3，适合 Text-to-SQL/总结）；
+#       deepseek-reasoner（推理模型，速度较慢）
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+
+# API 地址（默认官方；可用 DEEPSEEK_BASE_URL 覆盖为代理/自建网关）
+DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 
 # ==================== 数据集与数据库路径 ====================
 # 本地数据集主目录：程序会递归读取该目录下全部 csv，自动跳过 __MACOSX 与隐藏文件
@@ -48,6 +67,6 @@ def resolve_data_dir() -> str:
 
 
 def has_api_key() -> bool:
-    """是否配置了有效的 API Key（排除占位符）。"""
-    k = (CLAUDE_API_KEY or "").strip()
-    return bool(k) and not k.startswith("sk-ant-xxx")
+    """是否配置了有效的 API Key（排除空值与占位符）。"""
+    k = (DEEPSEEK_API_KEY or "").strip()
+    return bool(k) and not k.startswith("sk-xxx") and "你的" not in k
