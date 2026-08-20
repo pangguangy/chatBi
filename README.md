@@ -196,4 +196,4 @@ python agent_graph.py "2026年6月各车型的总产量是多少？按产量从�
 | 推荐平台/工具 | 未使用推荐平台或工具 |
 | 其他平台/模型 | LangGraph+Streamlit，调用 DeepSeek API |
 | 作品访问方式 | 本地运行（附录屏演示视频） |
-| 代码提交 | https://github.com/pangguangy/chatbi-manufacturing-agent |
+| 代码提交 | https://github.com/pangguangy/chatBi |
