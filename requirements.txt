@@ -1,0 +1,13 @@
+# Manufacturing Chat-BI Agent dependencies
+# Install: pip install -r requirements.txt
+
+streamlit>=1.36.0
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+
+# LangGraph for agent task planning and tool calling
+langgraph>=0.2.0
+
+# Claude API (Anthropic official SDK)
+anthropic>=0.34.0

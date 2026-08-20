@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 数据库文件（本地生成，可重新初始化）
+chatbi.db
+*.db
+
+# 数据集 CSV：随仓库提交（约 850KB），供 HuggingFace Spaces 冷启动自动初始化 ./data
+# 注意：不要忽略 data/*.csv，否则 HF Spaces git-push 部署后冷启动会因找不到数据而失败
+
+# 密钥与本地配置
+.env
+.env.local
+
+# 系统文件
+.DS_Store
+Thumbs.db
